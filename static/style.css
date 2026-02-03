@@ -174,12 +174,11 @@ h1, h2, h3, h4, h5, h6 {
     grid-template-columns: repeat(9, 1fr);
     gap: 1px;
     background: var(--border-color);
-    border: 3px solid var(--text-primary);
-    border-radius: var(--border-radius);
+    border: 2px solid var(--text-primary);
+    border-radius: 10px;
     overflow: hidden;
 
-    width: min(92vw, 92vh);   /* 👈 KEY FIX */
-    max-width: 420px;         /* desktop cap */
+    width: min(92vw, 78vh);   /* 🔥 CRITICAL FIX */
     aspect-ratio: 1 / 1;
     margin: 0 auto;
 }
@@ -189,12 +188,14 @@ h1, h2, h3, h4, h5, h6 {
     align-items: center;
     justify-content: center;
     background: var(--bg-secondary);
-    font-size: 1.5rem;
+
+    font-size: clamp(0.9rem, 3.5vw, 1.4rem); /* 🔥 KEY FIX */
     font-weight: 600;
+
+    padding: 2px;          /* breathing space */
     transition: all var(--transition-fast);
     position: relative;
 }
-
 /* 3x3 box borders */
 .sudoku-cell:nth-child(3n) {
     border-right: 2px solid var(--text-primary);
@@ -728,8 +729,14 @@ h1, h2, h3, h4, h5, h6 {
 .mb-4 { margin-bottom: 2rem; }
 
 @media (max-width: 480px) {
+
     .sudoku-grid {
         width: 94vw;
         border-width: 2px;
+    }
+
+    .sudoku-cell {
+        font-size: 1rem;
+        padding: 1px;
     }
 }
