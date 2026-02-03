@@ -9,6 +9,7 @@ import json
 
 from sudoku_solver import SudokuSolver
 from ocr_processor import OCRProcessor
+from sudoku_generator import SudokuGenerator
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -24,6 +25,12 @@ app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB max
 def index():
     """Render the home page."""
     return render_template('index.html')
+
+
+@app.route('/play')
+def play_mode():
+    """Render the play mode page."""
+    return render_template('play.html')
 
 
 @app.route('/upload', methods=['POST'])
@@ -162,6 +169,163 @@ def internal_error(e):
         'success': False,
         'error': 'An internal error occurred. Please try again.'
     }), 500
+
+
+# ==================== PLAY MODE ROUTES ====================
+
+@app.route('/generate', methods=['POST'])
+def generate_puzzle():
+    """Generate a new Sudoku puzzle."""
+    data = request.get_json()
+    difficulty = data.get('difficulty', 'medium')
+    
+    if difficulty not in ['easy', 'medium', 'hard']:
+        difficulty = 'medium'
+    
+    # Generate puzzle
+    puzzle, solution = SudokuGenerator.generate_puzzle(difficulty)
+    
+    # Store in session
+    session['play_mode'] = True
+    session['puzzle'] = puzzle
+    session['solution'] = solution
+    session['current_grid'] = puzzle
+    session['difficulty'] = difficulty
+    
+    return jsonify({
+        'success': True,
+        'puzzle': puzzle,
+        'difficulty': difficulty
+    })
+
+
+@app.route('/play/check', methods=['POST'])
+def check_move():
+    """Check if a move is correct."""
+    data = request.get_json()
+    
+    if 'puzzle' not in session or 'solution' not in session:
+        return jsonify({
+            'success': False,
+            'error': 'No active game'
+        })
+    
+    row = data.get('row')
+    col = data.get('col')
+    value = data.get('value')
+    
+    if row is None or col is None or value is None:
+        return jsonify({
+            'success': False,
+            'error': 'Missing row, col, or value'
+        })
+    
+    puzzle = session['puzzle']
+    solution = session['solution']
+    current_grid = session.get('current_grid', puzzle)
+    
+    # Check if cell is editable
+    if puzzle[row][col] != 0:
+        return jsonify({
+            'success': False,
+            'error': 'This cell cannot be changed',
+            'is_correct': False
+        })
+    
+    # Check if value is correct
+    is_correct = (solution[row][col] == value)
+    
+    if is_correct:
+        # Update current grid
+        current_grid[row][col] = value
+        session['current_grid'] = current_grid
+        
+        # Check if puzzle is complete
+        is_complete = SudokuGenerator.is_puzzle_complete(current_grid)
+        if is_complete:
+            is_won, message = SudokuGenerator.check_win(current_grid, solution)
+            return jsonify({
+                'success': True,
+                'is_correct': True,
+                'is_complete': True,
+                'is_won': is_won,
+                'message': message
+            })
+        
+        return jsonify({
+            'success': True,
+            'is_correct': True,
+            'message': 'Correct!'
+        })
+    else:
+        return jsonify({
+            'success': True,
+            'is_correct': False,
+            'message': 'Wrong answer! Try again',
+            'correct_value': solution[row][col]  # Optional: remove in production
+        })
+
+
+@app.route('/play/hint', methods=['POST'])
+def get_hint():
+    """Get a hint for the current puzzle."""
+    if 'puzzle' not in session or 'solution' not in session:
+        return jsonify({
+            'success': False,
+            'error': 'No active game'
+        })
+    
+    puzzle = session['puzzle']
+    solution = session['solution']
+    current_grid = session.get('current_grid', puzzle)
+    
+    # Find an empty cell to hint
+    empty_cells = []
+    for row in range(9):
+        for col in range(9):
+            if current_grid[row][col] == 0:
+                empty_cells.append((row, col))
+    
+    if not empty_cells:
+        return jsonify({
+            'success': False,
+            'error': 'Puzzle is already complete'
+        })
+    
+    # Pick a random empty cell
+    import random
+    row, col = random.choice(empty_cells)
+    hint_value = solution[row][col]
+    
+    return jsonify({
+        'success': True,
+        'row': row,
+        'col': col,
+        'value': hint_value
+    })
+
+
+@app.route('/play/validate', methods=['POST'])
+def validate_progress():
+    """Validate current progress and show errors."""
+    if 'solution' not in session:
+        return jsonify({
+            'success': False,
+            'error': 'No active game'
+        })
+    
+    data = request.get_json()
+    current_grid = data.get('grid')
+    solution = session['solution']
+    
+    is_valid, errors = SudokuGenerator.validate_current_state(current_grid, solution)
+    
+    return jsonify({
+        'success': True,
+        'is_valid': is_valid,
+        'errors': errors,
+        'error_count': len(errors)
+    })
 
 
 if __name__ == '__main__':

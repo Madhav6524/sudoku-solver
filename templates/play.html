@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Play Sudoku</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* Additional styles for play mode */
+        .number-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+            max-width: 280px;
+            margin: 1.5rem auto;
+        }
+
+        .number-btn {
+            aspect-ratio: 1;
+            font-size: 1.5rem;
+            font-weight: 600;
+            border: 2px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .number-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--accent-red);
+            transform: scale(1.05);
+        }
+
+        .number-btn:active {
+            transform: scale(0.95);
+        }
+
+        .play-grid .sudoku-cell {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .play-grid .sudoku-cell:not(.locked):hover {
+            background: rgba(229, 9, 20, 0.2);
+        }
+
+        .play-grid .sudoku-cell.locked {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            font-weight: 700;
+            cursor: not-allowed;
+        }
+
+        .play-grid .sudoku-cell.selected {
+            background: rgba(229, 9, 20, 0.3);
+            box-shadow: inset 0 0 0 3px var(--accent-red);
+        }
+
+        .play-grid .sudoku-cell.error {
+            background: rgba(229, 9, 20, 0.4);
+            animation: shake 0.5s;
+        }
+
+        .play-grid .sudoku-cell.correct {
+            animation: correctPulse 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        @keyframes correctPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .difficulty-selector {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+
+        .diff-btn {
+            padding: 0.75rem 1.5rem;
+            border: 2px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .diff-btn:hover {
+            border-color: var(--accent-red);
+            color: var(--text-primary);
+        }
+
+        .diff-btn.active {
+            background: var(--accent-red);
+            border-color: var(--accent-red);
+            color: white;
+        }
+
+        .game-stats {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-red);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">Generating puzzle...</p>
+    </div>
+
+    <main class="main-content">
+        <div class="container">
+            <!-- Header -->
+            <header class="header">
+                <h1>Play Sudoku</h1>
+                <p class="subtitle">Choose difficulty and solve the puzzle!</p>
+                <div class="btn-group mt-3">
+                    <a href="/" class="btn btn-outline">🧩 Solver Mode</a>
+                    <a href="/play" class="btn btn-primary">🎮 Play Mode</a>
+                </div>
+            </header>
+
+            <!-- Message Area -->
+            <div id="message-area"></div>
+
+            <!-- Start Screen -->
+            <div id="start-screen">
+                <div class="card text-center">
+                    <h2 class="card-title" style="justify-content: center;">Select Difficulty</h2>
+                    <div class="difficulty-selector">
+                        <button class="diff-btn active" data-difficulty="easy" onclick="selectDifficulty('easy')">
+                            😊 Easy
+                        </button>
+                        <button class="diff-btn" data-difficulty="medium" onclick="selectDifficulty('medium')">
+                            🤔 Medium
+                        </button>
+                        <button class="diff-btn" data-difficulty="hard" onclick="selectDifficulty('hard')">
+                            😤 Hard
+                        </button>
+                    </div>
+                    <button class="btn btn-primary" onclick="startGame()" style="margin-top: 1.5rem;">
+                        🚀 Start Game
+                    </button>
+                </div>
+            </div>
+
+            <!-- Game Screen -->
+            <div id="game-screen" class="hidden">
+                <div class="solution-container">
+                    <!-- Game Stats -->
+                    <div class="game-stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="difficulty-display">Easy</div>
+                            <div class="stat-label">Difficulty</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="filled-count">0/81</div>
+                            <div class="stat-label">Filled</div>
+                        </div>
+                    </div>
+
+                    <!-- Sudoku Grid -->
+                    <div class="grid-wrapper mt-4">
+                        <div class="sudoku-grid play-grid" id="play-grid"></div>
+                    </div>
+
+                    <!-- Number Pad -->
+                    <div class="number-pad">
+                        <button class="number-btn" onclick="selectNumber(1)">1</button>
+                        <button class="number-btn" onclick="selectNumber(2)">2</button>
+                        <button class="number-btn" onclick="selectNumber(3)">3</button>
+                        <button class="number-btn" onclick="selectNumber(4)">4</button>
+                        <button class="number-btn" onclick="selectNumber(5)">5</button>
+                        <button class="number-btn" onclick="selectNumber(6)">6</button>
+                        <button class="number-btn" onclick="selectNumber(7)">7</button>
+                        <button class="number-btn" onclick="selectNumber(8)">8</button>
+                        <button class="number-btn" onclick="selectNumber(9)">9</button>
+                    </div>
+
+                    <!-- Control Buttons -->
+                    <div class="control-buttons">
+                        <button class="btn btn-secondary" onclick="clearSelectedCell()">
+                            🗑️ Clear Cell
+                        </button>
+                        <button class="btn btn-secondary" onclick="getHint()">
+                            💡 Hint
+                        </button>
+                        <button class="btn btn-outline" onclick="newGame()">
+                            🔄 New Game
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        Created by Madhav
+    </footer>
+
+    <script>
+        // ==================== Global State ====================
+        let selectedDifficulty = 'easy';
+        let puzzleGrid = [];
+        let solutionGrid = [];
+        let currentGrid = [];
+        let selectedCell = null;
+        let lockedCells = new Set();
+
+        // ==================== Initialize ====================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set up number pad keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                if (e.key >= '1' && e.key <= '9') {
+                    selectNumber(parseInt(e.key));
+                } else if (e.key === 'Backspace' || e.key === 'Delete') {
+                    clearSelectedCell();
+                }
+            });
+        });
+
+        // ==================== Difficulty Selection ====================
+        function selectDifficulty(difficulty) {
+            selectedDifficulty = difficulty;
+            
+            // Update button states
+            document.querySelectorAll('.diff-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.difficulty === difficulty) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+
+        // ==================== Game Start ====================
+        async function startGame() {
+            showLoading('Generating puzzle...');
+            
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ difficulty: selectedDifficulty })
+                });
+                
+                const data = await response.json();
+                hideLoading();
+                
+                if (data.success) {
+                    puzzleGrid = data.puzzle;
+                    currentGrid = JSON.parse(JSON.stringify(puzzleGrid));
+                    
+                    // Mark locked cells
+                    lockedCells.clear();
+                    for (let row = 0; row < 9; row++) {
+                        for (let col = 0; col < 9; col++) {
+                            if (puzzleGrid[row][col] !== 0) {
+                                lockedCells.add(`${row}-${col}`);
+                            }
+                        }
+                    }
+                    
+                    // Show game screen
+                    document.getElementById('start-screen').classList.add('hidden');
+                    document.getElementById('game-screen').classList.remove('hidden');
+                    document.getElementById('difficulty-display').textContent = 
+                        selectedDifficulty.charAt(0).toUpperCase() + selectedDifficulty.slice(1);
+                    
+                    renderPlayGrid();
+                    updateStats();
+                } else {
+                    showMessage(data.error || 'Failed to generate puzzle', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                showMessage('Error generating puzzle', 'error');
+            }
+        }
+
+        function newGame() {
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('hidden');
+            selectedCell = null;
+            hideMessage();
+        }
+
+        // ==================== Grid Rendering ====================
+        function renderPlayGrid() {
+            const grid = document.getElementById('play-grid');
+            grid.innerHTML = '';
+            
+            for (let row = 0; row < 9; row++) {
+                for (let col = 0; col < 9; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'sudoku-cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    
+                    const value = currentGrid[row][col];
+                    if (value > 0) {
+                        cell.textContent = value;
+                    }
+                    
+                    // Mark locked cells
+                    if (lockedCells.has(`${row}-${col}`)) {
+                        cell.classList.add('locked');
+                    } else {
+                        cell.addEventListener('click', () => selectCell(row, col));
+                    }
+                    
+                    grid.appendChild(cell);
+                }
+            }
+        }
+
+        function selectCell(row, col) {
+            if (lockedCells.has(`${row}-${col}`)) return;
+            
+            selectedCell = { row, col };
+            
+            // Update visual selection
+            document.querySelectorAll('.play-grid .sudoku-cell').forEach(cell => {
+                cell.classList.remove('selected');
+            });
+            
+            const cellElement = document.querySelector(
+                `.play-grid .sudoku-cell[data-row="${row}"][data-col="${col}"]`
+            );
+            if (cellElement) {
+                cellElement.classList.add('selected');
+            }
+        }
+
+        // ==================== Number Selection ====================
+        async function selectNumber(num) {
+            if (!selectedCell) {
+                showMessage('Please select a cell first', 'info');
+                return;
+            }
+            
+            const { row, col } = selectedCell;
+            
+            if (lockedCells.has(`${row}-${col}`)) {
+                showMessage('This cell cannot be changed', 'error');
+                return;
+            }
+            
+            showLoading('Checking...');
+            
+            try {
+                const response = await fetch('/play/check', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ row, col, value: num })
+                });
+                
+                const data = await response.json();
+                hideLoading();
+                
+                if (data.success) {
+                    const cellElement = document.querySelector(
+                        `.play-grid .sudoku-cell[data-row="${row}"][data-col="${col}"]`
+                    );
+                    
+                    if (data.is_correct) {
+                        // Correct answer
+                        currentGrid[row][col] = num;
+                        cellElement.textContent = num;
+                        cellElement.classList.add('correct');
+                        cellElement.classList.add('solved');
+                        setTimeout(() => cellElement.classList.remove('correct'), 500);
+                        
+                        updateStats();
+                        
+                        // Check if puzzle is complete
+                        if (data.is_complete) {
+                            if (data.is_won) {
+                                showMessage(data.message, 'success');
+                                setTimeout(() => {
+                                    if (confirm('Congratulations! Play again?')) {
+                                        newGame();
+                                    }
+                                }, 1000);
+                            }
+                        } else {
+                            showMessage('Correct! ✓', 'success');
+                            setTimeout(hideMessage, 1500);
+                        }
+                        
+                        // Auto-select next empty cell
+                        selectNextEmptyCell();
+                    } else {
+                        // Wrong answer
+                        cellElement.classList.add('error');
+                        setTimeout(() => cellElement.classList.remove('error'), 500);
+                        showMessage(data.message, 'error');
+                        setTimeout(hideMessage, 2000);
+                    }
+                } else {
+                    showMessage(data.error || 'Error checking answer', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                showMessage('Error checking answer', 'error');
+            }
+        }
+
+        function selectNextEmptyCell() {
+            const { row, col } = selectedCell;
+            
+            // Try to find next empty cell
+            for (let r = row; r < 9; r++) {
+                for (let c = (r === row ? col + 1 : 0); c < 9; c++) {
+                    if (currentGrid[r][c] === 0 && !lockedCells.has(`${r}-${c}`)) {
+                        selectCell(r, c);
+                        return;
+                    }
+                }
+            }
+            
+            // If not found, search from beginning
+            for (let r = 0; r <= row; r++) {
+                for (let c = 0; c < (r === row ? col : 9); c++) {
+                    if (currentGrid[r][c] === 0 && !lockedCells.has(`${r}-${c}`)) {
+                        selectCell(r, c);
+                        return;
+                    }
+                }
+            }
+        }
+
+        function clearSelectedCell() {
+            if (!selectedCell) {
+                showMessage('Please select a cell first', 'info');
+                return;
+            }
+            
+            const { row, col } = selectedCell;
+            
+            if (lockedCells.has(`${row}-${col}`)) {
+                showMessage('This cell cannot be changed', 'error');
+                return;
+            }
+            
+            currentGrid[row][col] = 0;
+            
+            const cellElement = document.querySelector(
+                `.play-grid .sudoku-cell[data-row="${row}"][data-col="${col}"]`
+            );
+            if (cellElement) {
+                cellElement.textContent = '';
+                cellElement.classList.remove('solved');
+            }
+            
+            updateStats();
+        }
+
+        // ==================== Hint ====================
+        async function getHint() {
+            showLoading('Getting hint...');
+            
+            try {
+                const response = await fetch('/play/hint', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                hideLoading();
+                
+                if (data.success) {
+                    const { row, col, value } = data;
+                    
+                    // Auto-fill the hint
+                    currentGrid[row][col] = value;
+                    selectCell(row, col);
+                    
+                    const cellElement = document.querySelector(
+                        `.play-grid .sudoku-cell[data-row="${row}"][data-col="${col}"]`
+                    );
+                    if (cellElement) {
+                        cellElement.textContent = value;
+                        cellElement.classList.add('solved');
+                        cellElement.classList.add('correct');
+                        setTimeout(() => cellElement.classList.remove('correct'), 500);
+                    }
+                    
+                    updateStats();
+                    showMessage(`Hint: Cell (${row + 1}, ${col + 1}) = ${value}`, 'info');
+                    setTimeout(hideMessage, 3000);
+                } else {
+                    showMessage(data.error || 'Cannot get hint', 'error');
+                }
+            } catch (error) {
+                hideLoading();
+                showMessage('Error getting hint', 'error');
+            }
+        }
+
+        // ==================== Stats ====================
+        function updateStats() {
+            let filled = 0;
+            for (let row = 0; row < 9; row++) {
+                for (let col = 0; col < 9; col++) {
+                    if (currentGrid[row][col] !== 0) {
+                        filled++;
+                    }
+                }
+            }
+            
+            document.getElementById('filled-count').textContent = `${filled}/81`;
+        }
+
+        // ==================== UI Helpers ====================
+        function showLoading(text = 'Processing...') {
+            document.querySelector('.loading-text').textContent = text;
+            document.getElementById('loading').classList.add('active');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('active');
+        }
+
+        function showMessage(text, type = 'info') {
+            const area = document.getElementById('message-area');
+            area.innerHTML = `<div class="message message-${type}">${text}</div>`;
+        }
+
+        function hideMessage() {
+            document.getElementById('message-area').innerHTML = '';
+        }
+    </script>
+</body>
+</html>
