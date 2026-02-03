@@ -1,0 +1,727 @@
+/* 
+ * Sudoku Solver - Netflix-inspired Dark Theme
+ * Modern, responsive, premium look
+ */
+
+/* ========== CSS Variables ========== */
+:root {
+    --bg-primary: #141414;
+    --bg-secondary: #1f1f1f;
+    --bg-card: #2a2a2a;
+    --bg-hover: #333333;
+    --text-primary: #ffffff;
+    --text-secondary: #b3b3b3;
+    --text-muted: #808080;
+    --accent-red: #e50914;
+    --accent-red-hover: #f40612;
+    --accent-green: #46d369;
+    --accent-blue: #0080ff;
+    --accent-yellow: #f5c518;
+    --border-color: #404040;
+    --shadow-color: rgba(0, 0, 0, 0.5);
+    --transition-fast: 0.2s ease;
+    --transition-medium: 0.3s ease;
+    --border-radius: 8px;
+    --border-radius-lg: 12px;
+}
+
+/* ========== Reset & Base ========== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.6;
+}
+
+/* ========== Typography ========== */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    letter-spacing: -0.02em;
+}
+
+/* ========== Layout ========== */
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem;
+    width: 100%;
+}
+
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+}
+
+/* ========== Header ========== */
+.header {
+    text-align: center;
+    margin-bottom: 3rem;
+    animation: fadeInDown 0.6s ease;
+}
+
+.header h1 {
+    font-size: 3.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent-red) 0%, #ff6b6b 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 0 40px rgba(229, 9, 20, 0.3);
+}
+
+.header .subtitle {
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+/* ========== Cards ========== */
+.card {
+    background: var(--bg-card);
+    border-radius: var(--border-radius-lg);
+    padding: 2rem;
+    box-shadow: 0 8px 32px var(--shadow-color);
+    transition: transform var(--transition-medium), box-shadow var(--transition-medium);
+    border: 1px solid var(--border-color);
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 48px var(--shadow-color);
+}
+
+.card-title {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.card-title .icon {
+    font-size: 1.75rem;
+}
+
+/* ========== Input Methods ========== */
+.input-methods {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2rem;
+    width: 100%;
+    max-width: 800px;
+    animation: fadeInUp 0.6s ease 0.2s both;
+}
+
+/* ========== File Upload ========== */
+.upload-area {
+    border: 2px dashed var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 2.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition-medium);
+    background: var(--bg-secondary);
+}
+
+.upload-area:hover,
+.upload-area.dragover {
+    border-color: var(--accent-red);
+    background: rgba(229, 9, 20, 0.1);
+}
+
+.upload-area .upload-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.7;
+}
+
+.upload-area p {
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.upload-area .file-types {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+#file-input {
+    display: none;
+}
+
+/* ========== Sudoku Grid ========== */
+.sudoku-grid {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    gap: 1px;
+    background: var(--border-color);
+    border: 3px solid var(--text-primary);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    max-width: 450px;
+    margin: 0 auto;
+    aspect-ratio: 1;
+}
+
+.sudoku-cell {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-secondary);
+    font-size: 1.5rem;
+    font-weight: 600;
+    transition: all var(--transition-fast);
+    position: relative;
+}
+
+/* 3x3 box borders */
+.sudoku-cell:nth-child(3n) {
+    border-right: 2px solid var(--text-primary);
+}
+
+.sudoku-cell:nth-child(9n) {
+    border-right: none;
+}
+
+.sudoku-cell:nth-child(n+19):nth-child(-n+27),
+.sudoku-cell:nth-child(n+46):nth-child(-n+54) {
+    border-bottom: 2px solid var(--text-primary);
+}
+
+/* Input cells */
+.sudoku-cell input {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: transparent;
+    text-align: center;
+    font-size: inherit;
+    font-weight: inherit;
+    color: var(--text-primary);
+    caret-color: var(--accent-red);
+    outline: none;
+}
+
+.sudoku-cell input:focus {
+    background: rgba(229, 9, 20, 0.2);
+}
+
+.sudoku-cell input::placeholder {
+    color: var(--text-muted);
+}
+
+/* Cell states */
+.sudoku-cell.original {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.sudoku-cell.solved {
+    color: var(--accent-green);
+    animation: cellFadeIn 0.3s ease;
+}
+
+.sudoku-cell.highlight {
+    background: rgba(229, 9, 20, 0.3);
+    animation: pulse 0.5s ease;
+}
+
+.sudoku-cell.current-step {
+    background: rgba(69, 211, 105, 0.3);
+    box-shadow: inset 0 0 0 2px var(--accent-green);
+}
+
+/* ========== Buttons ========== */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.75rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.btn-primary {
+    background: var(--accent-red);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--accent-red-hover);
+    transform: scale(1.02);
+}
+
+.btn-secondary {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+    background: var(--border-color);
+}
+
+.btn-outline {
+    background: transparent;
+    color: var(--text-primary);
+    border: 2px solid var(--border-color);
+}
+
+.btn-outline:hover {
+    border-color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-group {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* ========== Action Buttons ========== */
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* ========== Step Controls ========== */
+.step-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.step-indicator {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    padding: 0.5rem 1rem;
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    min-width: 140px;
+    text-align: center;
+}
+
+/* ========== Messages ========== */
+.message {
+    padding: 1rem 1.5rem;
+    border-radius: var(--border-radius);
+    margin: 1rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    animation: fadeIn 0.3s ease;
+}
+
+.message-error {
+    background: rgba(229, 9, 20, 0.15);
+    border: 1px solid var(--accent-red);
+    color: #ff6b6b;
+}
+
+.message-success {
+    background: rgba(69, 211, 105, 0.15);
+    border: 1px solid var(--accent-green);
+    color: var(--accent-green);
+}
+
+.message-warning {
+    background: rgba(245, 197, 24, 0.15);
+    border: 1px solid var(--accent-yellow);
+    color: var(--accent-yellow);
+}
+
+.message-info {
+    background: rgba(0, 128, 255, 0.15);
+    border: 1px solid var(--accent-blue);
+    color: var(--accent-blue);
+}
+
+/* ========== Loading ========== */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(20, 20, 20, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all var(--transition-medium);
+}
+
+.loading-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.loading-spinner {
+    width: 60px;
+    height: 60px;
+    border: 4px solid var(--bg-hover);
+    border-top-color: var(--accent-red);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.loading-text {
+    margin-top: 1.5rem;
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+}
+
+/* ========== Footer ========== */
+.footer {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    border-top: 1px solid var(--border-color);
+    margin-top: auto;
+}
+
+.footer a {
+    color: var(--accent-red);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+.footer a:hover {
+    color: var(--accent-red-hover);
+}
+
+/* ========== Solution Page ========== */
+.solution-container {
+    animation: fadeInUp 0.5s ease;
+}
+
+.solution-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.solution-header h2 {
+    font-size: 2rem;
+    color: var(--accent-green);
+    margin-bottom: 0.5rem;
+}
+
+.grid-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+/* ========== Legend ========== */
+.legend {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+}
+
+.legend-color.original {
+    background: var(--bg-hover);
+    border: 1px solid var(--border-color);
+}
+
+.legend-color.solved {
+    background: var(--accent-green);
+}
+
+.legend-color.current {
+    background: rgba(69, 211, 105, 0.3);
+    border: 2px solid var(--accent-green);
+}
+
+/* ========== Tabs ========== */
+.tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 1.5rem;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    background: var(--bg-secondary);
+}
+
+.tab {
+    flex: 1;
+    padding: 1rem;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all var(--transition-fast);
+}
+
+.tab:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+}
+
+.tab.active {
+    background: var(--accent-red);
+    color: white;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+/* ========== Modal ========== */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--bg-card);
+    border-radius: var(--border-radius-lg);
+    padding: 2rem;
+    max-width: 500px;
+    width: 90%;
+    animation: scaleIn 0.3s ease;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: color var(--transition-fast);
+}
+
+.modal-close:hover {
+    color: var(--text-primary);
+}
+
+/* ========== Animations ========== */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes cellFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* ========== Responsive ========== */
+@media (max-width: 768px) {
+    .header h1 {
+        font-size: 2.5rem;
+    }
+    
+    .header .subtitle {
+        font-size: 1rem;
+    }
+    
+    .input-methods {
+        grid-template-columns: 1fr;
+    }
+    
+    .card {
+        padding: 1.5rem;
+    }
+    
+    .sudoku-grid {
+        max-width: 100%;
+    }
+    
+    .sudoku-cell {
+        font-size: 1.2rem;
+    }
+    
+    .btn {
+        padding: 0.75rem 1.25rem;
+        font-size: 0.9rem;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .btn-group .btn {
+        width: 100%;
+    }
+    
+    .step-controls {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 480px) {
+    .header h1 {
+        font-size: 2rem;
+    }
+    
+    .container {
+        padding: 1rem;
+    }
+    
+    .sudoku-cell {
+        font-size: 1rem;
+    }
+    
+    .upload-area {
+        padding: 1.5rem;
+    }
+    
+    .upload-area .upload-icon {
+        font-size: 2rem;
+    }
+}
+
+/* ========== Utility Classes ========== */
+.hidden {
+    display: none !important;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.mt-1 { margin-top: 0.5rem; }
+.mt-2 { margin-top: 1rem; }
+.mt-3 { margin-top: 1.5rem; }
+.mt-4 { margin-top: 2rem; }
+
+.mb-1 { margin-bottom: 0.5rem; }
+.mb-2 { margin-bottom: 1rem; }
+.mb-3 { margin-bottom: 1.5rem; }
+.mb-4 { margin-bottom: 2rem; }
