@@ -259,59 +259,63 @@ h1, h2, h3, h4, h5, h6 {
 /* ========== Sudoku Grid ========== */
 .sudoku-grid {
     display: grid;
-    grid-template-columns: repeat(9, 1fr);
-    grid-template-rows: repeat(9, 1fr);
-    gap: 0;
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+    grid-template-rows: repeat(9, minmax(0, 1fr));
     background: #333;
     border: 3px solid #333;
-    border-radius: var(--border-radius);
+    border-radius: 8px;
     overflow: hidden;
-    box-shadow: var(--shadow-lg);
-    width: 450px;
-    height: 450px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    width: 100%;
+    max-width: 450px;
+    aspect-ratio: 1 / 1;
     margin: 0 auto;
-}
-
-@media (min-width: 768px) {
-    .sudoku-grid {
-        width: 500px;
-        height: 500px;
-    }
-}
-
-@media (max-width: 500px) {
-    .sudoku-grid {
-        width: 95vw;
-        height: 95vw;
-        max-width: 400px;
-        max-height: 400px;
-    }
 }
 
 .sudoku-cell {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #ffffff;
-    font-size: clamp(1.1rem, 3vw, 1.75rem);
+    background: #fff;
+    font-size: 1.5rem;
     font-weight: 600;
-    color: var(--text-primary);
-    border: 1px solid #ddd;
-    transition: background var(--transition-fast);
+    color: #1a1a1a;
+    border: 1px solid #ccc;
+    aspect-ratio: 1 / 1;
+    min-width: 0;
+    min-height: 0;
 }
 
-/* 3x3 box borders - right borders */
-.sudoku-cell:nth-child(3n+3):not(:nth-child(9n)) {
+/* 3x3 box - vertical dividers after columns 3 and 6 */
+.sudoku-cell:nth-child(9n+3),
+.sudoku-cell:nth-child(9n+6) {
     border-right: 2px solid #333;
 }
 
-/* 3x3 box borders - bottom borders for rows 3 and 6 */
-.sudoku-cell:nth-child(n+19):nth-child(-n+27) {
+/* 3x3 box - horizontal dividers after rows 3 and 6 */
+.sudoku-cell:nth-child(n+19):nth-child(-n+27),
+.sudoku-cell:nth-child(n+46):nth-child(-n+54) {
     border-bottom: 2px solid #333;
 }
 
-.sudoku-cell:nth-child(n+46):nth-child(-n+54) {
-    border-bottom: 2px solid #333;
+/* Desktop - larger grid */
+@media (min-width: 768px) {
+    .sudoku-grid {
+        max-width: 500px;
+    }
+    .sudoku-cell {
+        font-size: 1.75rem;
+    }
+}
+
+/* Mobile - smaller grid */
+@media (max-width: 480px) {
+    .sudoku-grid {
+        max-width: 95vw;
+    }
+    .sudoku-cell {
+        font-size: 1.1rem;
+    }
 }
 
 /* Input cells */
