@@ -469,6 +469,90 @@ h1, h2, h3, h4, h5, h6 {
     justify-content: center;
 }
 
+/* ========== Number Pad ========== */
+.number-pad {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+    max-width: 450px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.num-btn {
+    aspect-ratio: 1 / 1;
+    border: 2px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 1.5rem;
+    font-weight: 600;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 50px;
+}
+
+.num-btn:hover {
+    background: var(--accent-blue);
+    color: white;
+    border-color: var(--accent-blue);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.num-btn:active {
+    transform: translateY(0);
+}
+
+.num-btn-clear {
+    background: var(--accent-red);
+    color: white;
+    border-color: var(--accent-red);
+    font-size: 1.8rem;
+}
+
+.num-btn-clear:hover {
+    background: var(--accent-red-hover);
+    border-color: var(--accent-red-hover);
+}
+
+/* Hint cell styling */
+.sudoku-cell input.hint-cell {
+    color: var(--accent-green) !important;
+    font-weight: 700;
+}
+
+@media (max-width: 768px) {
+    .number-pad {
+        max-width: 95vw;
+        gap: 0.5rem;
+    }
+    
+    .num-btn {
+        font-size: 1.3rem;
+        min-height: 45px;
+    }
+}
+
+@media (max-width: 480px) {
+    .number-pad {
+        gap: 0.4rem;
+    }
+    
+    .num-btn {
+        font-size: 1.2rem;
+        min-height: 40px;
+    }
+    
+    .num-btn-clear {
+        font-size: 1.5rem;
+    }
+}
+
 /* ========== Action Buttons ========== */
 .action-buttons {
     display: flex;
