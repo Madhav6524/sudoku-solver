@@ -262,41 +262,56 @@ h1, h2, h3, h4, h5, h6 {
     grid-template-columns: repeat(9, 1fr);
     grid-template-rows: repeat(9, 1fr);
     gap: 0;
-    background: var(--border-dark);
-    border: 3px solid var(--border-dark);
+    background: #333;
+    border: 3px solid #333;
     border-radius: var(--border-radius);
     overflow: hidden;
     box-shadow: var(--shadow-lg);
-    width: 100%;
-    max-width: 400px;
-    aspect-ratio: 1 / 1;
+    width: 450px;
+    height: 450px;
     margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+    .sudoku-grid {
+        width: 500px;
+        height: 500px;
+    }
+}
+
+@media (max-width: 500px) {
+    .sudoku-grid {
+        width: 95vw;
+        height: 95vw;
+        max-width: 400px;
+        max-height: 400px;
+    }
 }
 
 .sudoku-cell {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--bg-secondary);
-    font-size: clamp(1rem, 4vw, 1.5rem);
+    background: #ffffff;
+    font-size: clamp(1.1rem, 3vw, 1.75rem);
     font-weight: 600;
     color: var(--text-primary);
-    border: 1px solid var(--border-color);
+    border: 1px solid #ddd;
     transition: background var(--transition-fast);
 }
 
 /* 3x3 box borders - right borders */
 .sudoku-cell:nth-child(3n+3):not(:nth-child(9n)) {
-    border-right: 2px solid var(--border-dark);
+    border-right: 2px solid #333;
 }
 
 /* 3x3 box borders - bottom borders for rows 3 and 6 */
 .sudoku-cell:nth-child(n+19):nth-child(-n+27) {
-    border-bottom: 2px solid var(--border-dark);
+    border-bottom: 2px solid #333;
 }
 
 .sudoku-cell:nth-child(n+46):nth-child(-n+54) {
-    border-bottom: 2px solid var(--border-dark);
+    border-bottom: 2px solid #333;
 }
 
 /* Input cells */
@@ -426,6 +441,11 @@ h1, h2, h3, h4, h5, h6 {
 
 .btn-success:hover {
     background: var(--accent-green-light);
+}
+
+.btn-lg {
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
 }
 
 .btn:disabled {
